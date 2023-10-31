@@ -1,0 +1,42 @@
+roles:
+- name: read-write-oidc
+  resources:
+  - metrics
+  - logs
+  - traces
+  tenants:
+  - test-oidc
+  permissions:
+  - read
+  - write
+- name: read-attacker
+  resources:
+  - metrics
+  tenants:
+  - test-attacker
+  permissions:
+  - read
+- name: read-write-mtls
+  resources:
+  - metrics
+  - logs
+  - traces
+  tenants:
+  - test-mtls
+  permissions:
+  - read
+  - write
+roleBindings:
+- name: test-oidc
+  roles:
+  - read-write-oidc
+  - read-attacker
+  subjects:
+  - name: admin@example.com
+    kind: user
+- name: test-mtls
+  roles:
+  - read-write-mtls
+  subjects:
+  - name: test
+    kind: group

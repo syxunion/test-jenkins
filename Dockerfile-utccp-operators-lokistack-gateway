@@ -1,0 +1,41 @@
+ARG arch
+FROM 10.30.38.116/syx-test/golang-$arch:1.20 AS builder
+
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+ENV GOFLAGS="-p=4"
+
+ENV BUILD_VERSION=0.1.0
+ENV OS_GIT_MAJOR=0
+ENV OS_GIT_MINOR=1
+ENV OS_GIT_PATCH=0
+ENV SOURCE_GIT_COMMIT=a3eb5a4146d3ba4476d8e09822ffdbc2ddae3114
+ENV SOURCE_GIT_URL=https://github.com/observatorium/api
+
+ADD app /tmp/src/app
+WORKDIR /tmp/src/app
+
+RUN go env -w GO111MODULE=on && \
+    go env -w GOPROXY=https://goproxy.io,direct && \
+    go build -a -ldflags '-s -w' -o lokistack-gateway .
+
+#@follow_tag(registry.redhat.io/ubi8:latest)
+FROM 10.30.38.116/utccp-$arch/dependence-uos20:latest
+
+COPY --from=builder /tmp/src/app/lokistack-gateway /usr/bin/lokistack-gateway
+
+EXPOSE 80
+ENTRYPOINT ["/usr/bin/lokistack-gateway"]
+
+LABEL io.k8s.display-name="UCCPS Lokistack Gateway" \
+      io.k8s.description="Horizontally-scalable authn/authz-securing reverse proxy for Loki." \
+      io.openshift.tags="uccps,logging,loki" \
+      maintainer="sunyuxuan@uniontech.com" \
+      name="uccps-logging/lokistack-gateway" \
+      com.uos.component="lokistack-gateway-container" \
+      io.openshift.maintainer.product="UCCPS" \
+      io.openshift.maintainer.component="Logging" \
+      io.openshift.build.commit.id=a3eb5a4146d3ba4476d8e09822ffdbc2ddae3114 \
+      io.openshift.build.source-location=https://github.com/observatorium/api \
+      io.openshift.build.commit.url=https://github.com/observatorium/api/commit/a3eb5a4146d3ba4476d8e09822ffdbc2ddae3114 \
+      version=v0.1.0
